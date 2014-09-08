@@ -45,7 +45,7 @@ Below the link explains how accessing environment variables from Ruby, for execu
 GitHub is accessed by Token 
 
 ```ruby
-@github = Octokit::Client.new(:access_token => ENV["GITHUB_ACCESS_TOKEN”])
+@github = Octokit::Client.new(:access_token => ENV["GITHUB_ACCESS_TOKEN"])
 ```
 
 #### Bitbucket 
