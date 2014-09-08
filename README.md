@@ -7,23 +7,23 @@ Script for extracting Git and Bitbucket commit data to CSV.
 
 Dependencies 
 
-⋅⋅* Ruby 2.1.0
+* Ruby 2.1.0
 
 ### List of libraries used 
 
-⋅⋅* csv
+* csv
 
-⋅⋅* octoKit
+* octoKit
 
-⋅⋅* bitbucket_rest_api
+* bitbucket_rest_api
 
-⋅⋅* oauth
+* oauth
 
-⋅⋅* oauth/consumer
+* oauth/consumer
 
-⋅⋅* json
+* json
 
-⋅⋅* octokit
+* octokit
 
 ### Application execution instructions
 
