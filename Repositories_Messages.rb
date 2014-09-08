@@ -23,11 +23,7 @@ end
 
 @github = Octokit::Client.new(:access_token => ENV["GITHUB_ACCESS_TOKEN"])
 
-@bitbucket = BitBucket.new do |config|
-  config.client_id     = 'sERhqm8FGFnQ5vBNSB'
-  config.client_secret = 'p3ZGRZmaFEuhECvWFzVFVgagMfcMn5xH'
-  config.adapter       = :net_http
-end
+
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #                    Get Data
