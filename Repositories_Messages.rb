@@ -23,13 +23,16 @@ end
 
 @github = Octokit::Client.new(:access_token => ENV["GITHUB_ACCESS_TOKEN"])
 
-
+@github_organization     = "ssilab"
+@bitbucket_commits_limit = 50 
+@array_repositories_github  = Array.new
+@filename                = 'Repositories_Messagesy.csv'
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #                    Get Data
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 
-CSV.open(@fileName, "wb") do |csv|
+CSV.open(@filename, "wb") do |csv|
   csv << ["From","Repository", "Branche", "SHA", "Node", "FileName", "Author", "Category", "Message", "Date"]
 end
 
