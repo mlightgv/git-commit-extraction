@@ -14,7 +14,7 @@ require 'csv'
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 
 # @bitbucket = BitBucket.new login:'', password:''
-=begin
+
 @bitbucket = BitBucket.new do |config|
   config.client_id     = ENV["BITBUCKET_CLIENT_ID"]
   config.client_secret = ENV["BITBUCKET_CLIENT_SECRET"]
@@ -29,20 +29,6 @@ end
   config.adapter       = :net_http
 end
 
-=end
-
-github = Octokit::Client.new(:access_token => "5a6a69f2fcd2db70364d3db3cc939d60bb342fa6")
-
-@bitbucket = BitBucket.new do |config|
-  config.client_id     = 'sERhqm8FGFnQ5vBNSB'
-  config.client_secret = 'p3ZGRZmaFEuhECvWFzVFVgagMfcMn5xH'
-  config.adapter       = :net_http
-end
-
-@github_organization     = "ssilab"
-@bitbucket_commits_limit = 50 
-@array_repositories_github  = Array.new
-@fileName                = 'Repositories_Messagesy.csv'
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #                    Get Data
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
