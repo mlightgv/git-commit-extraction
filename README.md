@@ -44,17 +44,18 @@ Below the link explains how accessing environment variables from Ruby, for execu
 
 GitHub is accessed by Token 
 
+```ruby
 @github = Octokit::Client.new(:access_token => ENV["GITHUB_ACCESS_TOKEN”])
+```
 
 #### Bitbucket 
 
 Bitbucket is accessed by client id and client secret.
 
+```ruby
 @bitbucket = BitBucket.new do |config|
   config.client_id     = ENV["BITBUCKET_CLIENT_ID"]
   config.client_secret = ENV["BITBUCKET_CLIENT_SECRET"]
   config.adapter       = :net_http
 end
-
-
-
+```
