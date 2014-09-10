@@ -44,7 +44,7 @@ end
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 
 CSV.open(@filename, "wb") do |csv|
-  csv << ["From","Repository", "Branche", "SHA", "FileName", "Author", "Category", "Message", "Date"]
+  csv << ["From","Repository", "Branch", "SHA", "FileName", "Author", "Category", "Message", "Date"]
 end
 
 def category(message)
@@ -123,7 +123,7 @@ def bitbucket_commits_details(repo_slug, commits, is_last_page)
           commit_repository = repo_slug             
           commit_branche    = change.branche     
           commit_sha        = change.raw_node       
-          commit_fileName  = '' #file.file             
+          commit_fileName   = '' #file.file             
           commit_author     = change.author         
           commit_message    = change.message        
           commit_category   = category(commit_message)
