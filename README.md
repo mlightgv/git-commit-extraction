@@ -27,7 +27,33 @@ Dependencies
 
 ### Application execution instructions
 
-Output File:
+### Input:
+
+To get data from an especific repository in Bitbucket, you should call the following method at the end of the script
+
+```ruby
+bitbucket_commits(owner_name, repository_name)
+```
+
+To get data  from all repositories in Bitbucket, you should  call the following method at the end of the script
+
+```ruby
+bitbucket_repositories
+```
+
+To get data from an especific repository in GitHub, you should call the following method at the end of the script
+
+```ruby
+github_commits_branches(repository_name)
+```
+
+To get data  from all repositories in GitHub, you should call the following method at the end of the script
+
+```ruby
+github_repositories
+```
+
+### Output File:
 
 The Repositories_Messagesy.csv file contains commits information from Bitbucket and GitHub Repositories from SSILAB Organization
 
