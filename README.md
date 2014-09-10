@@ -31,9 +31,9 @@ Output File:
 
 The Repositories_Messagesy.csv file contains commits information from Bitbucket and GitHub Repositories from SSILAB Organization
 
-| From | Repository | Branche | SHA | Node | FileName | Author | Category | Message | Date |
-|------|------------|---------|-----|------|----------|--------|----------|---------|------|
-|GitHub|satellite-usage-portalmaster|8cdaed6abfa15157a017e71184a77d8940ca3b80|src/scripts/app.coffee|Luke Horvat|NEW|NEW: Created a "decimalPlaces” filter|2014-08-16 15:50:39 UTC
+| From | Repository | Branche | SHA | FileName | Author | Category | Message | Date |
+|------|------------|---------|-----|----------|--------|----------|---------|------|
+|GitHub|satellite-usage-portalmaster|Master|8cdaed6abfa15157a017e71184a77d8940ca3b80|src/scripts/app.coffee|Luke Horvat|NEW|NEW: Created a "decimalPlaces” filter|2014-08-16 15:50:39 UTC
 
 ### Instructions to setup environment variables 
 
