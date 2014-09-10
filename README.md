@@ -29,7 +29,7 @@ Dependencies
 
 ### Input:
 
-To get data from an especific repository in Bitbucket, you should call the following method at the end of the script
+To get data from a specific repository in Bitbucket, you should call the following method at the end of the script
 
 ```ruby
 bitbucket_commits(owner_name, repository_name)
@@ -41,7 +41,7 @@ To get data  from all repositories in Bitbucket, you should  call the following 
 bitbucket_repositories
 ```
 
-To get data from an especific repository in GitHub, you should call the following method at the end of the script
+To get data from a specific repository in GitHub, you should call the following method at the end of the script
 
 ```ruby
 github_commits_branches(repository_name)
