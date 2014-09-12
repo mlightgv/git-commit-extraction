@@ -10,6 +10,7 @@ require 'bitbucket_rest_api'
 require 'octokit'
 require 'csv'
 require 'whenever'
+require 'fileutils'
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #                    Environment Variables
@@ -28,6 +29,9 @@ if ENV["COMMIT_EXTRACTION_GITHUB_REPOS"].nil?
 end
 if ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"].nil?
   puts "Couldn't find COMMIT_EXTRACTION_BITBUCKET_REPOS"
+end
+if ENV["COMMIT_EXTRACTION_ORGANIZATION"].nil?
+  puts "Couldn't find COMMIT_EXTRACTION_ORGANIZATION"
 end
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #               Provide authentication credentials
@@ -51,7 +55,9 @@ end
 @github_commits_limit       = 100
 @bitbucket_commits_limit    = 50 
 @array_repositories_github  = Array.new
-@filename                   = 'commit_extraction.csv'
+
+FileUtils.mkdir('output') unless Dir.exists?('output')
+@filename                   = '/Users/Mgomez/git-commit-extraction/output/commit_extraction.csv'
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #                    Header File
@@ -254,7 +260,7 @@ if github_repositories.size == 0
 end
 
 if bitbucket_repositories.size == 0
-  bitbucket_repositories
+   bitbucket_repositories
 end
 
 
