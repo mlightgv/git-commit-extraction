@@ -52,9 +52,9 @@ To get data  from all repositories in GitHub, you should leave empty the environ
 
 The commit_extraction.csv file contains commits information from Bitbucket and GitHub Repositories from SSILAB Organization
 
-| From | Repository | Branch  | SHA | FileName | Author | Category | Message | Date |
-|------|------------|---------|-----|----------|--------|----------|---------|------|
-|GitHub|satellite-usage-portalmaster|Master|8cdaed6abfa15157a017e71184a77d8940ca3b80|src/scripts/app.coffee|Luke Horvat|NEW|NEW: Created a "decimalPlaces” filter|2014-08-16 15:50:39 UTC
+| From | Repository | Branch  | SHA | FileName |Deletions|Additions|Changes| Author | Category | Message | Date |
+|------|------------|---------|-----|----------|---------|---------|-------|--------|----------|---------|------|
+|GitHub|satellite-usage-portalmaster|Master|8cdaed6abfa15157a017e71184a77d8940ca3b80|src/scripts/app.coffee|15|2|17|Luke Horvat|NEW|NEW: Created a "decimalPlaces” filter|2014-08-16 15:50:39 UTC
 
 ### Instructions to setup environment variables 
 

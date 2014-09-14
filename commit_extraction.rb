@@ -11,7 +11,10 @@ require 'octokit'
 require 'csv'
 require 'whenever'
 require 'fileutils'
-
+require 'oauth'
+require 'oauth/consumer'
+require 'json'
+require 'octokit'
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #                    Environment Variables
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
@@ -45,13 +48,17 @@ end
   config.adapter       = :net_http
 end
 
+@bitbucket_consumer = OAuth::Consumer.new ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"], 
+                                ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"], 
+                                {:site=>"https://bitbucket.org"}
+
 @github = Octokit::Client.new(:access_token => ENV["COMMIT_EXTRACTION_GITHUB_ACCESS_TOKEN"])
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #                    inizialization variables
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 
-@github_organization        = "ssilab"
+@github_organization        = ENV["COMMIT_EXTRACTION_ORGANIZATION"]
 @github_commits_limit       = 100
 @bitbucket_commits_limit    = 50 
 @array_repositories_github  = Array.new
@@ -64,7 +71,7 @@ FileUtils.mkdir('output') unless Dir.exists?('output')
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 
 CSV.open(@filename, "wb") do |csv|
-  csv << ["From","Repository", "Branch", "SHA", "FileName", "Author", "Category", "Message", "Date"]
+  csv << ["From","Repository", "Branch", "SHA", "FileName", "Deletions", "Additions", "Changes", "Author", "Category", "Message", "Date"]
 end
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
@@ -117,8 +124,8 @@ def bitbucket_commits_count(repo_owner, repo_slug)
   end
 end
 
-def bitbucket_commits_by_page(num_pages, repo_owner, repo_slug, start_commit_node)
-  if num_pages == 1
+def bitbucket_commits_by_page(num_page, repo_owner, repo_slug, start_commit_node)
+  if num_page == 1
     commits = @bitbucket.repos.changesets.list repo_owner, repo_slug, 
                                                  :limit => @bitbucket_commits_limit
   else
@@ -129,8 +136,8 @@ def bitbucket_commits_by_page(num_pages, repo_owner, repo_slug, start_commit_nod
   return commits
 end
 
-def bitbucket_commits_is_last_page(commits_count, num_pages)
-   if commits_count - num_pages <= @bitbucket_commits_limit
+def bitbucket_commits_is_last_page(commits_count, num_page)
+   if commits_count - num_page <= @bitbucket_commits_limit
       is_last_page = true
     else
       is_last_page = false
@@ -138,12 +145,12 @@ def bitbucket_commits_is_last_page(commits_count, num_pages)
     return is_last_page
 end
 
-def bitbucket_commits_details(repo_slug, commits, is_last_page)
+def bitbucket_commits_details(repo_owner, repo_slug, commits, is_last_page)
   start_commit_node = ''
   num_node = 1
   CSV.open(@filename, "ab") do |csv|
     commits.changesets.each  do |change|
-      #change.files.each do |file|
+      change.files.each do |file|
         if num_node == 1 
           start_commit_node = change.node 
         end
@@ -151,15 +158,29 @@ def bitbucket_commits_details(repo_slug, commits, is_last_page)
           commit_repository = repo_slug             
           commit_branche    = change.branche     
           commit_sha        = change.raw_node       
-          commit_fileName   = '' #file.file             
+          commit_fileName   = file.file             
           commit_author     = change.author         
           commit_message    = change.message        
           commit_category   = category(commit_message)
-          commit_date       = change.timestamp.to_s       
-          csv << ["Bitbucket", commit_repository, commit_branche, commit_sha, commit_fileName, commit_author, commit_category.to_s, commit_message, commit_date] 
+          commit_date       = change.timestamp.to_s    
+          response = @bitbucket_consumer.request(:get, "https://bitbucket.org/api/1.0/repositories/#{repo_owner}/#{repo_slug}/changesets/#{change.raw_node}/diffstat/")
+          hash = JSON.parse(response.body)
+          for i in 0..hash.size - 1
+            @commit_fileName = hash[i]["file"]
+            stat             = hash[i]["diffstat"]
+            stat.each do |item|
+              if item[0] == 'removed'
+                @commit_deletions = item[1]
+              else
+                @commit_additions = item[1]
+              end
+                @commit_changes   = @commit_deletions.to_i + @commit_additions.to_i
+            end     
+            csv << ["Bitbucket", commit_repository, commit_branche, commit_sha, commit_fileName, @commit_deletions, @commit_additions, @commit_changes, commit_author, commit_category.to_s, commit_message, commit_date] 
+          end
         end
         num_node = num_node + 1
-      #end 
+      end 
     end
   end
   return start_commit_node
@@ -168,12 +189,12 @@ end
 def bitbucket_commits(repo_owner, repo_slug)
   commits_count     = bitbucket_commits_count(repo_owner, repo_slug)
   start_commit_node = ''
-  num_pages         = 1
-  while num_pages <= commits_count  do
-    commits           = bitbucket_commits_by_page(num_pages, repo_owner, repo_slug, start_commit_node)
-    is_last_page      = bitbucket_commits_is_last_page(commits_count, num_pages)
-    start_commit_node = bitbucket_commits_details(repo_slug, commits, is_last_page)
-    num_pages         += @bitbucket_commits_limit
+  num_page         = 1
+  while num_page <= commits_count  do
+    commits           = bitbucket_commits_by_page(num_page, repo_owner, repo_slug, start_commit_node)
+    is_last_page      = bitbucket_commits_is_last_page(commits_count, num_page)
+    start_commit_node = bitbucket_commits_details(repo_owner, repo_slug, commits, is_last_page)
+    num_page         += @bitbucket_commits_limit
   end
 end
 
@@ -193,17 +214,20 @@ end
 def github_commits_details(repo_full_name, branche,  sha)
   CSV.open(@filename, "ab") do |csv|
     commit = @github.commit repo_full_name, sha
-    #commit[:files].each do |item|
+    commit[:files].each do |item|
       commit_repository = repo_full_name                    
       commit_branche    = branche            
       commit_sha        = commit.sha                   
-      commit_fileName   = '' #item[:filename]                
+      commit_fileName   = item[:filename]  
+      commit_additions  = item[:additions].to_s         
+      commit_deletions  = item[:deletions].to_s         
+      commit_changes    = item[:changes].to_s               
       commit_author     = commit.commit.author.name     
       commit_message    = commit.commit.message          
       commit_category   = category(commit_message)
       commit_date       = commit.commit.author.date.to_s 
-      csv << ["GitHub",commit_repository, commit_branche, commit_sha, commit_fileName, commit_author, commit_category.to_s, commit_message, commit_date] 
-    #end
+      csv << ["GitHub",commit_repository, commit_branche, commit_sha, commit_fileName, commit_deletions, commit_additions, commit_changes, commit_author, commit_category.to_s, commit_message, commit_date] 
+    end
   end
 end
 
@@ -245,6 +269,8 @@ end
 github_repositories = ENV["COMMIT_EXTRACTION_GITHUB_REPOS"].split(",")
 bitbucket_repositories = ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"].split(",")
 
+current_time = Time.now
+puts  "Start " + current_time.strftime("%Y-%m-%d %H:%M:%S")
 
 github_repositories.each do |repo|
   github_commits_branches(repo)
@@ -263,7 +289,8 @@ if bitbucket_repositories.size == 0
    bitbucket_repositories
 end
 
-
+current_time = Time.now
+puts "End " + current_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 
