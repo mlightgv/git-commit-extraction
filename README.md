@@ -25,41 +25,36 @@ Dependencies
 
 * octokit
 
+* whenever
+
 ### Application execution instructions
 
 ### Input:
 
-To get data from a specific repository in Bitbucket, you should call the following method at the end of the script
+To get data from one or more repositories in Bitbucket, you should add repositories separates by comas to the environment variable called COMMIT_EXTRACTION_BITBUCKET_REPOS
 
-```ruby
-bitbucket_commits(owner_name, repository_name)
-```
+For instance:
 
-To get data  from all repositories in Bitbucket, you should  call the following method at the end of the script
+ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"] = repository_owner/repository_name,repository_owner/repository_name,...
 
-```ruby
-bitbucket_repositories
-```
+To get data  from all repositories in Bitbucket, you should leave empty the environment variable called COMMIT_EXTRACTION_BITBUCKET_REPOS
 
-To get data from a specific repository in GitHub, you should call the following method at the end of the script
+To get data from a specific repository in GitHub, you should add repositories separates by comas to the environment variable called COMMIT_EXTRACTION_GITHUB_REPOS
 
-```ruby
-github_commits_branches(repository_name)
-```
+For instance:
 
-To get data  from all repositories in GitHub, you should call the following method at the end of the script
+ENV["COMMIT_EXTRACTION_GITHUB_REPOS"] = repository_name,repository_name,...
 
-```ruby
-github_repositories
-```
+To get data  from all repositories in GitHub, you should leave empty the environment variable called COMMIT_EXTRACTION_BITBUCKET_REPOS
+
 
 ### Output File:
 
-The Repositories_Messagesy.csv file contains commits information from Bitbucket and GitHub Repositories from SSILAB Organization
+The commit_extraction.csv file contains commits information from Bitbucket and GitHub Repositories from SSILAB Organization
 
-| From | Repository | Branche | SHA | FileName | Author | Category | Message | Date |
-|------|------------|---------|-----|----------|--------|----------|---------|------|
-|GitHub|satellite-usage-portalmaster|Master|8cdaed6abfa15157a017e71184a77d8940ca3b80|src/scripts/app.coffee|Luke Horvat|NEW|NEW: Created a "decimalPlaces” filter|2014-08-16 15:50:39 UTC
+| From | Repository | Branch  | SHA | FileName |Deletions|Additions|Changes| Author | Category | Message | Date |
+|------|------------|---------|-----|----------|---------|---------|-------|--------|----------|---------|------|
+|GitHub|satellite-usage-portalmaster|Master|8cdaed6abfa15157a017e71184a77d8940ca3b80|src/scripts/app.coffee|15|2|17|Luke Horvat|NEW|NEW: Created a "decimalPlaces” filter|2014-08-16 15:50:39 UTC
 
 ### Instructions to setup environment variables 
 
