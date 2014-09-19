@@ -35,7 +35,7 @@ def category(message)
       category_message = "DOC"
     when /QUALITY/
       category_message = "QUALITY"
-    when /CONF/
+    when /CONF/, /DEVOPS/
       category_message = "CONFIG"
     when /TEST/
       category_message = "TEST"
