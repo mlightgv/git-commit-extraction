@@ -14,65 +14,6 @@ require 'fileutils'
 require 'oauth'
 require 'oauth/consumer'
 require 'json'
-require 'octokit'
-# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
-#                    Environment Variables
-# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
-if ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"].nil?
-  puts "Couldn't find COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"
-end
-if ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"].nil?
-  puts "Couldn't find COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"
-end
-if ENV["COMMIT_EXTRACTION_GITHUB_ACCESS_TOKEN"].nil?
-  puts "Couldn't find COMMIT_EXTRACTION_GITHUB_ACCESS_TOKEN"
-end
-if ENV["COMMIT_EXTRACTION_GITHUB_REPOS"].nil?
-  puts "Couldn't find COMMIT_EXTRACTION_GITHUB_REPOS"
-end
-if ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"].nil?
-  puts "Couldn't find COMMIT_EXTRACTION_BITBUCKET_REPOS"
-end
-if ENV["COMMIT_EXTRACTION_ORGANIZATION"].nil?
-  puts "Couldn't find COMMIT_EXTRACTION_ORGANIZATION"
-end
-# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
-#               Provide authentication credentials
-# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
-
-# @bitbucket = BitBucket.new login:'', password:''
-
-@bitbucket = BitBucket.new do |config|
-  config.client_id     = ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"]
-  config.client_secret = ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"]
-  config.adapter       = :net_http
-end
-
-@bitbucket_consumer = OAuth::Consumer.new ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"],
-                                ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"],
-                                {:site=>"https://bitbucket.org"}
-
-@github = Octokit::Client.new(:access_token => ENV["COMMIT_EXTRACTION_GITHUB_ACCESS_TOKEN"])
-
-# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
-#                    inizialization variables
-# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
-
-@github_organization        = ENV["COMMIT_EXTRACTION_ORGANIZATION"]
-@github_commits_limit       = 100
-@bitbucket_commits_limit    = 50
-@array_repositories_github  = Array.new
-
-FileUtils.mkdir('output') unless Dir.exists?('output')
-@filename                   = '/Users/Mgomez/git-commit-extraction/output/commit_extraction.csv'
-
-# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
-#                    Header File
-# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
-
-CSV.open(@filename, "wb") do |csv|
-  csv << ["From","Repository", "Branch", "SHA", "FileName", "Deletions", "Additions", "Changes", "Author", "Category", "Message", "Date"]
-end
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 #                    Message categorization
@@ -198,7 +139,7 @@ def bitbucket_commits(repo_owner, repo_slug)
   end
 end
 
-def bitbucket_repositories
+def extract_all_bitbucket_repositories
   @bitbucket.repos.list do |repo|
     if !repo.is_private && @array_repositories_github.include?(repo.name) then
       next
@@ -252,7 +193,7 @@ def github_commits_branches(repo_full_name)
   end
 end
 
-def github_repositories
+def extract_all_github_repositories
   x = 0
   repos = @github.organization_repositories @github_organization, { type: 'sources' }
   repos.each do |repo|
@@ -266,27 +207,101 @@ end
 #                    Script Execution
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 
-github_repositories = ENV["COMMIT_EXTRACTION_GITHUB_REPOS"].split(",")
-bitbucket_repositories = ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"].split(",")
+if ARGV[0]
+  @output_dir = ARGV[0]
+
+  unless Dir.exists? @output_dir
+    puts "ERROR: Output directory #{@output_dir} does not exist."
+    exit
+  end
+else
+  puts <<-eos
+  ERROR: No output directory specified
+
+  Example usage:
+  ruby commit_extraction.rb [output_dir]
+  eos
+  exit
+end
+
+# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+#                    Environment Variables
+# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+if ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"].nil?
+  puts "Couldn't find COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"
+end
+if ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"].nil?
+  puts "Couldn't find COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"
+end
+if ENV["COMMIT_EXTRACTION_GITHUB_ACCESS_TOKEN"].nil?
+  puts "Couldn't find COMMIT_EXTRACTION_GITHUB_ACCESS_TOKEN"
+end
+if ENV["COMMIT_EXTRACTION_GITHUB_REPOS"].nil?
+  puts "Couldn't find COMMIT_EXTRACTION_GITHUB_REPOS"
+end
+if ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"].nil?
+  puts "Couldn't find COMMIT_EXTRACTION_BITBUCKET_REPOS"
+end
+if ENV["COMMIT_EXTRACTION_ORGANIZATION"].nil?
+  puts "Couldn't find COMMIT_EXTRACTION_ORGANIZATION"
+end
+
+# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+#                    Header File
+# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+
+if ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"] && ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"]
+  @bitbucket = BitBucket.new do |config|
+    config.client_id     = ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"]
+    config.client_secret = ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"]
+    config.adapter       = :net_http
+  end
+
+  @bitbucket_consumer = OAuth::Consumer.new(ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_ID"],
+                                            ENV["COMMIT_EXTRACTION_BITBUCKET_CLIENT_SECRET"],
+                                            {:site=>"https://bitbucket.org"})
+end
+
+@github = Octokit::Client.new(:access_token => ENV["COMMIT_EXTRACTION_GITHUB_ACCESS_TOKEN"])
+
+# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+#                    initialization variables
+# //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+
+@github_organization        = ENV["COMMIT_EXTRACTION_ORGANIZATION"]
+@github_commits_limit       = 100
+@bitbucket_commits_limit    = 50
+@array_repositories_github  = Array.new
+
+@filename = "#{@output_dir}/commit-extraction.csv"
+
+CSV.open(@filename, "wb") do |csv|
+  csv << ["From","Repository", "Branch", "SHA", "FileName", "Deletions", "Additions", "Changes", "Author", "Category", "Message", "Date"]
+end
+
+github_repositories     = ENV["COMMIT_EXTRACTION_GITHUB_REPOS"] ?     ENV["COMMIT_EXTRACTION_GITHUB_REPOS"].split(",")    : []
+bitbucket_repositories  = ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"] ?  ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"].split(",") : []
 
 current_time = Time.now
 puts  "Start " + current_time.strftime("%Y-%m-%d %H:%M:%S")
 
-github_repositories.each do |repo|
-  github_commits_branches(repo)
+if github_repositories.empty?
+  extract_all_github_repositories
+else
+  github_repositories.each do |repo|
+    github_commits_branches(repo)
+  end
 end
 
-bitbucket_repositories.each do |repo|
-  owner, repo_name = repo.split "/"
-  bitbucket_commits(owner, repo_name)
-end
-
-if github_repositories.size == 0
-  github_repositories
-end
-
-if bitbucket_repositories.size == 0
-   bitbucket_repositories
+if @bitbucket
+  if bitbucket_repositories.empty?
+    extract_all_bitbucket_repositories
+  else
+    bitbucket_repositories.each do |repo|
+      owner, repo_name = repo.split "/"
+      bitbucket_commits(owner, repo_name)
+    end
+  end
 end
 
 current_time = Time.now
