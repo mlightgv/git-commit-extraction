@@ -22,13 +22,11 @@ require 'json'
 def category(message)
   case message[0,10].upcase
     when /FIX/
-      category_message = "FIXED"
+      category_message = "FIX"
     when /NEW/, /ADD/, /IMPLEMENT/
       category_message = "NEW"
     when /ENHANCE/, /CHANGE/, /BETTER/
       category_message = "ENHANCE"
-    when /UPDATE/
-      category_message = "UPDATE"
     when /LOOKS/
       category_message = "LOOKS"
     when /SPEED/
@@ -37,16 +35,12 @@ def category(message)
       category_message = "DOC"
     when /QUALITY/
       category_message = "QUALITY"
-    when /CONFIG/
+    when /CONF/
       category_message = "CONFIG"
     when /TEST/
       category_message = "TEST"
-    when /SHAME/, /REMOVE/
-      category_message = "SHAME"
-    when /DEPLOY/
-      category_message = "DEPLOY"
     else
-      category_message = "NOT CATEGORY"
+      category_message = "UNCATEGORISED"
   end
   return category_message
 end
