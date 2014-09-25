@@ -81,10 +81,10 @@ end
 def category(message)
   case message[0,10].upcase 
     when /FIX/
-      category_message = "FIXED"
-    when /NEW/, /ADD/, /IMPLEMENT/
+      category_message = "FIX"
+    when /NEW/, /ADD/, /ADDED/, /IMPLEMENT/, /CREATED/
       category_message = "NEW"
-    when /ENHANCE/, /CHANGE/, /BETTER/
+    when /ENHANCE/, /CHANGE/, /BETTER/, /IMPROVE/
       category_message = "ENHANCE"
     when /UPDATE/
       category_message = "UPDATE"
