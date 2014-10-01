@@ -60,15 +60,23 @@ def bitbucket_commits_count(repo_owner, repo_slug)
 end
 
 def bitbucket_commits_by_page(num_page, repo_owner, repo_slug, start_commit_node)
-  if num_page == 1
-    commits = @bitbucket.repos.changesets.list repo_owner, repo_slug,
-                                                 :limit => @bitbucket_commits_limit
-  else
-    commits = @bitbucket.repos.changesets.list repo_owner, repo_slug,
-                                                 :limit => @bitbucket_commits_limit,
-                                                 :start => start_commit_node
-  end
-  return commits
+  begin
+    if num_page == 1
+      commits = @bitbucket.repos.changesets.list repo_owner, repo_slug,
+                                                   :limit => @bitbucket_commits_limit
+    else
+      commits = @bitbucket.repos.changesets.list repo_owner, repo_slug,
+                                                   :limit => @bitbucket_commits_limit,
+                                                   :start => start_commit_node
+    end
+    return commits
+  rescue => error
+    if error.inspect.include?"Error::ConnectionFailed"
+        puts "Network connection fails"
+    else  
+        puts "There is a error :#{error.inspect}"
+    end
+  end 
 end
 
 def bitbucket_commits_is_last_page(commits_count, num_page)
@@ -81,11 +89,11 @@ def bitbucket_commits_is_last_page(commits_count, num_page)
 end
 
 def bitbucket_commits_details(repo_owner, repo_slug, commits, is_last_page)
-  start_commit_node = ''
-  num_node = 1
-  CSV.open(@filename, "ab") do |csv|
-    commits.changesets.each  do |change|
-      change.files.each do |file|
+  begin
+    start_commit_node = ''
+    num_node = 1
+    CSV.open(@filename, "ab") do |csv|
+      commits.changesets.each  do |change|
         if num_node == 1
           start_commit_node = change.node
         end
@@ -93,7 +101,6 @@ def bitbucket_commits_details(repo_owner, repo_slug, commits, is_last_page)
           commit_repository = repo_slug
           commit_branche    = change.branche
           commit_sha        = change.raw_node
-          commit_fileName   = file.file
           commit_author     = change.author
           commit_message    = change.message
           commit_category   = category(commit_message)
@@ -101,6 +108,7 @@ def bitbucket_commits_details(repo_owner, repo_slug, commits, is_last_page)
           response = @bitbucket_consumer.request(:get, "https://bitbucket.org/api/1.0/repositories/#{repo_owner}/#{repo_slug}/changesets/#{change.raw_node}/diffstat/")
           hash = JSON.parse(response.body)
           for i in 0..hash.size - 1
+            current_time = Time.now
             @commit_fileName = hash[i]["file"]
             stat             = hash[i]["diffstat"]
             stat.each do |item|
@@ -111,35 +119,60 @@ def bitbucket_commits_details(repo_owner, repo_slug, commits, is_last_page)
               end
                 @commit_changes   = @commit_deletions.to_i + @commit_additions.to_i
             end
-            csv << ["Bitbucket", commit_repository, commit_branche, commit_sha, commit_fileName, @commit_deletions, @commit_additions, @commit_changes, commit_author, commit_category.to_s, commit_message, commit_date]
+            csv << ["Bitbucket", commit_repository, commit_branche, commit_sha, @commit_fileName, @commit_deletions, @commit_additions, @commit_changes, commit_author, commit_category.to_s, commit_message, commit_date, current_time.strftime("%Y-%m-%d %H:%M:%S")]
           end
         end
         num_node = num_node + 1
       end
     end
-  end
-  return start_commit_node
+    return start_commit_node
+  rescue => error
+    if error.inspect.include?"Error::ConnectionFailed"
+        puts "Network connection fails"
+    else  
+        puts "There is a error :#{error.inspect}"
+    end
+  end 
 end
 
 def bitbucket_commits(repo_owner, repo_slug)
-  commits_count     = bitbucket_commits_count(repo_owner, repo_slug)
-  start_commit_node = ''
-  num_page         = 1
-  while num_page <= commits_count  do
-    commits           = bitbucket_commits_by_page(num_page, repo_owner, repo_slug, start_commit_node)
-    is_last_page      = bitbucket_commits_is_last_page(commits_count, num_page)
-    start_commit_node = bitbucket_commits_details(repo_owner, repo_slug, commits, is_last_page)
-    num_page         += @bitbucket_commits_limit
+  begin
+    commits_count     = bitbucket_commits_count(repo_owner, repo_slug)
+    start_commit_node = ''
+    num_page         = 1
+    while num_page <= commits_count  do
+      commits           = bitbucket_commits_by_page(num_page, repo_owner, repo_slug, start_commit_node)
+      is_last_page      = bitbucket_commits_is_last_page(commits_count, num_page)
+      start_commit_node = bitbucket_commits_details(repo_owner, repo_slug, commits, is_last_page)
+      num_page         += @bitbucket_commits_limit
+    end
+  rescue => error
+    if error.inspect.include?"Error::ConnectionFailed"
+        puts "Network connection fails"
+   else  
+        puts "There is a error :#{error.inspect}"
+    end
   end
 end
 
 def extract_all_bitbucket_repositories
-  @bitbucket.repos.list do |repo|
-    if !repo.is_private && @array_repositories_github.include?(repo.name) then
-      next
+  begin 
+    @bitbucket.repos.list do |repo|
+      if !repo.is_private && @array_repositories_github.include?(repo.name) then
+        next
+      end
+      if repo.name == 'asset-android' || repo.name == 'asset-api' || repo.name == 'asset-web' || repo.name == 'blackdog-api' 
+        next
+      end
+      bitbucket_commits(repo.owner, repo.slug)
     end
-    bitbucket_commits(repo.owner, repo.slug)
-  end
+  rescue => error
+    if error.inspect.include?"Error::ConnectionFailed"
+        puts "Network connection fails"
+    else  
+        puts "There is a error :#{error.inspect}"
+    end
+  end 
 end
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
@@ -147,54 +180,89 @@ end
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 
 def github_commits_details(repo_full_name, branche,  sha)
-  CSV.open(@filename, "ab") do |csv|
-    commit = @github.commit repo_full_name, sha
-    commit[:files].each do |item|
-      commit_repository = repo_full_name
-      commit_branche    = branche
-      commit_sha        = commit.sha
-      commit_fileName   = item[:filename]
-      commit_additions  = item[:additions].to_s
-      commit_deletions  = item[:deletions].to_s
-      commit_changes    = item[:changes].to_s
-      commit_author     = commit.commit.author.name
-      commit_message    = commit.commit.message
-      commit_category   = category(commit_message)
-      commit_date       = commit.commit.author.date.to_s
-      csv << ["GitHub",commit_repository, commit_branche, commit_sha, commit_fileName, commit_deletions, commit_additions, commit_changes, commit_author, commit_category.to_s, commit_message, commit_date]
+  begin
+    CSV.open(@filename, "ab") do |csv|
+      commit = @github.commit repo_full_name, sha
+      commit[:files].each do |item|
+        current_time = Time.now
+        commit_repository = repo_full_name
+        commit_branche    = branche
+        commit_sha        = commit.sha
+        commit_fileName   = item[:filename]
+        commit_additions  = item[:additions].to_s
+        commit_deletions  = item[:deletions].to_s
+        commit_changes    = item[:changes].to_s
+        commit_author     = commit.commit.author.name
+        commit_message    = commit.commit.message
+        commit_category   = category(commit_message)
+        commit_date       = commit.commit.author.date.to_s
+        csv << ["GitHub",commit_repository, commit_branche, commit_sha, commit_fileName, commit_deletions, commit_additions, commit_changes, commit_author, commit_category.to_s, commit_message, commit_date, current_time.strftime("%Y-%m-%d %H:%M:%S")]
+      end
     end
-  end
+  rescue => error
+    if error.inspect.include?"Error::ConnectionFailed"
+        puts "Network connection fails"
+    else  
+        puts "There is a error :#{error.inspect}"
+    end
+  end 
 end
 
 
 def github_commits_by_page(repo_full_name, branche)
-  start_commit_sha = ''
-  num_page = 1
-  loop do
-    commits = @github.commits repo_full_name, branche, { page: num_page, per_page: @github_commits_limit }
-    commits_size = commits.size
-    for i in 0..commits.size - 1
-      github_commits_details(repo_full_name, branche, commits[i][:sha])
+  begin
+    start_commit_sha = ''
+    num_page = 1
+    loop do
+      commits = @github.commits repo_full_name, branche, { page: num_page, per_page: @github_commits_limit }
+      for i in 0..commits.size - 1
+        github_commits_details(repo_full_name, branche, commits[i][:sha])
+      end
+      num_page = num_page + 1
+    break if commits.size == 0 
     end
-    break if commits_size != 0
-  end
+  rescue => error
+    if error.inspect.include?"Error::ConnectionFailed"
+        puts "Network connection fails"
+    else  
+        puts "There is a error :#{error.inspect}"
+    end
+  end 
 end
 
 def github_commits_branches(repo_full_name)
-  branches = @github.branches repo_full_name
-  for i in 0..branches.size - 1
-     github_commits_by_page(repo_full_name, branches[i][:name])
-  end
+  begin
+    branches = @github.branches repo_full_name
+    for i in 0..branches.size - 1
+      github_commits_by_page(repo_full_name, branches[i][:name])
+    end
+  rescue => error
+    if error.inspect.include?"Error::ConnectionFailed"
+        puts "Network connection fails"
+    elsif error.inspect.include?"Octokit::NotFound: GET"
+        puts "The repository name #{repo_full_name} not exists or it is not the repository full_name"
+    else  
+        puts "There is a error :#{error.inspect}"
+    end
+  end 
 end
 
 def extract_all_github_repositories
-  x = 0
-  repos = @github.organization_repositories @github_organization, { type: 'sources' }
-  repos.each do |repo|
-    @array_repositories_github[x] = repo.name
-    x += 1
-    github_commits_branches(repo.full_name)
-  end
+  begin
+    x = 0
+    repos = @github.organization_repositories @github_organization, { type: 'sources' }
+    repos.each do |repo|
+      @array_repositories_github[x] = repo.name
+      x += 1
+      github_commits_branches(repo.full_name)
+    end
+  rescue => error
+    if error.inspect.include?"Error::ConnectionFailed"
+        puts "Network connection fails"
+    else  
+        puts "There is a error :#{error.inspect}"
+    end
+  end 
 end
 
 # //\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
@@ -270,7 +338,7 @@ end
 @filename = "#{@output_dir}/commit-extraction.csv"
 
 CSV.open(@filename, "wb") do |csv|
-  csv << ["From","Repository", "Branch", "SHA", "FileName", "Deletions", "Additions", "Changes", "Author", "Category", "Message", "Date"]
+  csv << ["From","Repository", "Branch", "SHA", "FileName", "Deletions", "Additions", "Changes", "Author", "Category", "Message", "Date", "Date_Extraction"]
 end
 
 github_repositories     = ENV["COMMIT_EXTRACTION_GITHUB_REPOS"] ?     ENV["COMMIT_EXTRACTION_GITHUB_REPOS"].split(",")    : []
@@ -279,11 +347,13 @@ bitbucket_repositories  = ENV["COMMIT_EXTRACTION_BITBUCKET_REPOS"] ?  ENV["COMMI
 current_time = Time.now
 puts  "Start " + current_time.strftime("%Y-%m-%d %H:%M:%S")
 
+
+
 if github_repositories.empty?
   extract_all_github_repositories
 else
   github_repositories.each do |repo|
-    github_commits_branches(repo)
+     github_commits_branches(repo)
   end
 end
 
