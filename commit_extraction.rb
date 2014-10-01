@@ -353,7 +353,7 @@ if github_repositories.empty?
   extract_all_github_repositories
 else
   github_repositories.each do |repo|
-     github_commits_branches(repo)
+    github_commits_branches(repo)
   end
 end
 
