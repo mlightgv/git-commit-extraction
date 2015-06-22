@@ -348,7 +348,7 @@ current_time = Time.now
 puts  "Start " + current_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
-
+=begin
 if github_repositories.empty?
   extract_all_github_repositories
 else
@@ -356,6 +356,7 @@ else
     github_commits_branches(repo)
   end
 end
+=end
 
 if @bitbucket
   if bitbucket_repositories.empty?
